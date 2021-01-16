@@ -1,0 +1,25 @@
+FROM amd64/ubuntu:20.04
+MAINTAINER Martin Nakladal "ok2uec@gmail.com"
+
+LABEL vendor1="Sphereserver"
+LABEL vendor2="intravps.cz"
+ENV IMMUNITE="yes"
+ENV SECURETOKEN="vdsa!g2c4e7j2m3"
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN dpkg --add-architecture i386
+RUN apt update  
+RUN apt install -y libmysqlclient-dev
+RUN apt install -y unzip git gcc-multilib g++-multilib make && rm -rf /var/lib/apt/lists/*
+RUN mkdir /source
+WORKDIR "/source"
+RUN git clone https://github.com/SphereServer/Source.git
+WORKDIR "/source/Source"
+RUN make NIGHTLY=1
+RUN rm -rf /source/Source/src
+RUN rm -rf /source/Source/makefile 
+RUN chmod +x /source/Source/spheresvr
+
+EXPOSE 2593
+ENTRYPOINT ["/source/Source/spheresvr"]

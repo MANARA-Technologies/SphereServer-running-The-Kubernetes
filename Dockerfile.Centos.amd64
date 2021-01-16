@@ -1,0 +1,41 @@
+FROM amd64/centos:7
+
+MAINTAINER Martin Nakladal "ok2uec@gmail.com"
+
+LABEL vendor1="Sphereserver"
+LABEL vendor2="intravps.cz"
+ENV IMMUNITE="yes"
+ENV SECURETOKEN="vdsa!g2c4e7j2m3"
+
+ENV DEBIAN_FRONTEND noninteractive
+
+RUN yum update -y
+RUN yum -y install yum-utils
+RUN yum  -y localinstall wget https://dev.mysql.com/get/mysql80-community-release-el7-3.noarch.rpm 
+RUN yum-config-manager --disable mysql80-community
+RUN yum-config-manager --enable mysql57-community
+
+RUN yum install -y make
+RUN yum install -y git
+RUN yum install -y gcc-c++
+RUN yum install -y glibc-devel.i686
+#RUN yum install -y mysql-community-devel.i686 mysql-community-libs.i686
+RUN yum install -y mariadb-devel.i686  mariadb-libs.i686
+RUN yum group install -y "Development Tools"
+ 
+#sudo yum whatprovides libmysqlclient*s
+#find / -name libmysqlclient.so
+RUN ln -s /usr/lib/mysql/libmysqlclient.so /usr/lib/libmysqlclient.so
+
+RUN mkdir /source
+WORKDIR "/source"
+RUN git clone https://github.com/SphereServer/Source.git
+WORKDIR "/source/Source"
+
+RUN make NIGHTLY=1  x86=1
+RUN rm -rf /source/Source/src
+RUN rm -rf /source/Source/makefile 
+RUN chmod +x /source/Source/spheresvr
+
+EXPOSE 2593
+ENTRYPOINT ["/source/Source/spheresvr"]

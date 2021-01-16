@@ -1,0 +1,49 @@
+image: atlassian/default-image:2
+
+pipelines:
+  custom:
+    ubuntu:
+      - step:
+          name: Build
+          deployment: test
+          services:
+            - docker
+          script:  
+            - export IMAGE_NAME=naklma/sphereserver:ubuntu-$BITBUCKET_COMMIT 
+            - docker build -t $IMAGE_NAME -f Dockerfile.Ubuntu.amd64 .  
+            - docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_PASSWORD 
+            - docker tag naklma/sphereserver:ubuntu-$BITBUCKET_COMMIT naklma/sphereserver:ubuntu
+            - docker push $IMAGE_NAME
+            
+      - step:
+          # set KUBERNETES_USERNAME and KUBERNETES_PASSWORD as environment variables
+          # this assumes your Docker image is already pushed to DockerHub with a version of BITBUCKET_BUILD_NUMBER
+          # and is running on the Kubernetes cluster. Use the following command locally to run the image before setting the deployment:
+          # kubectl run <app-name> --image=<my.dockerhub.username>/<image-name>:latest
+          name: Deploy to Kubernetes
+          deployment: production   # set to test, staging or production
+          #trigger: manual  # uncomment to have a manual step
+          image: atlassian/pipelines-kubectl 
+          services: # enable Docker for your repository
+            - docker 
+          script:
+            - export IMAGE_NAME=naklma/sphereserver:ubuntu-$BITBUCKET_COMMIT 
+            - kubectl config set-cluster ${KUBE_CLUSTER_NAME} --server=${KUBE_CLUSTER_HOST}   
+            - kubectl config set-credentials ${KUBE_USER} --token=${KUBE_AUTH_TOKEN}
+            - kubectl config set-context ${KUBE_CLUSTER_NAME} --cluster=${KUBE_CLUSTER_NAME} --user=${KUBE_USER}
+            - kubectl config use-context ${KUBE_CLUSTER_NAME}
+             # Update the deployment to use the new Docker image 
+            - kubectl set image deployment/sphereserver sphereserver=$IMAGE_NAME -n sphereserver
+
+    centos:
+      - step:
+          name: Build
+          deployment: test
+          services:
+            - docker
+          script:  
+            - export IMAGE_NAME=naklma/sphereserver:centos-$BITBUCKET_COMMIT 
+            - docker build -t $IMAGE_NAME -f Dockerfile.Centos.amd64 . 
+            - docker login --username $DOCKER_HUB_USERNAME --password $DOCKER_HUB_PASSWORD
+            - docker tag naklma/sphereserver:centos-$BITBUCKET_COMMIT naklma/sphereserver:centos
+            - docker push $IMAGE_NAME 

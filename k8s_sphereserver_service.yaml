@@ -1,0 +1,22 @@
+kind: Service
+apiVersion: v1
+metadata:
+  name: sphereserver-service
+  namespace: sphereserver
+  labels:
+    app: sphereserver
+spec:
+  ports:
+    - name: sphere2593
+      protocol: TCP
+      port: 2593
+      targetPort: 2593
+      nodePort: 30140  <automatic_generate>
+  selector:
+    app: sphereserver
+  type: LoadBalancer
+  externalIPs:
+    - 123.123.123.123  <publicIPserver> 
+  sessionAffinity: None
+  externalTrafficPolicy: Local
+  healthCheckNodePort: 32715 
